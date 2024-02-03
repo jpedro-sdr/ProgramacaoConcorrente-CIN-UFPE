@@ -1,3 +1,9 @@
+// Exercício 02
+// Reimplementar o Exercício 01 de tal forma que o desempenho da nova versão concorrente
+// seja melhor do que o desempenho da versão concorrente anterior. Além da reimplementação,
+// será preciso realizar novos experimentos para fazer a avaliação comparativa das duas versões.
+// IMPORTANTE: A versão concorrente do Exercício 01 não poderá ser alterada quando a equipe for realizar a avaliação de desempenho.
+
 package main
 
 import (
@@ -68,7 +74,7 @@ func PrintCPUUsage() (uint64, int) {
 
 func main() {
 	// Leitura do texto a partir de um arquivo (por exemplo, input.txt)
-	file, err := os.Open("files text/input.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		fmt.Println("Erro ao abrir o arquivo:", err)
 		return
