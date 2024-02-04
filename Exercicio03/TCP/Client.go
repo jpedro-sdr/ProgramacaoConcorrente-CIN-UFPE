@@ -1,12 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 )
 
+// WordCountRequest é a estrutura para a solicitação de contagem de palavras
+type WordCountRequest struct {
+	Text     string `json:"text"`
+	NumParts int    `json:"numParts"`
+}
+
+// WordCountResponse é a estrutura para a resposta da contagem de palavras
+type WordCountResponse struct {
+	TimeWithoutConcurrency time.Duration `json:"timeWithoutConcurrency"`
+	TimeWithConcurrency    time.Duration `json:"timeWithConcurrency"`
+}
+
 func main() {
-	// Conecta ao servidor TCP na porta 8080
+	// Conectar ao servidor TCP
 	conn, err := net.Dial("tcp", "localhost:8080")
 	if err != nil {
 		fmt.Println("Erro ao conectar ao servidor:", err)
@@ -14,19 +28,30 @@ func main() {
 	}
 	defer conn.Close()
 
-	// Envia uma mensagem para o servidor
-	message := "Olá, servidor!"
-	conn.Write([]byte(message))
+	// Construir a mensagem a ser enviada ao servidor
+	requestData := WordCountRequest{
+		Text:     "Seu texto aqui",
+		NumParts: 3,
+	}
 
-	// Aguarda a resposta do servidor
-	buffer := make([]byte, 1024)
-	bytesRead, err := conn.Read(buffer)
+	// Enviar a mensagem para o servidor
+	encoder := json.NewEncoder(conn)
+	err = encoder.Encode(requestData)
 	if err != nil {
-		fmt.Println("Erro ao ler a resposta do servidor:", err)
+		fmt.Println("Erro ao codificar e enviar a mensagem:", err)
 		return
 	}
 
-	// Exibe a resposta recebida do servidor
-	response := string(buffer[:bytesRead])
-	fmt.Printf("Resposta do servidor: %s\n", response)
+	// Receber a resposta do servidor
+	var response WordCountResponse
+	decoder := json.NewDecoder(conn)
+	err = decoder.Decode(&response)
+	if err != nil {
+		fmt.Println("Erro ao decodificar a resposta:", err)
+		return
+	}
+
+	// Processar a resposta conforme necessário
+	fmt.Printf("Tempo sem concorrência: %v\n", response.TimeWithoutConcurrency)
+	fmt.Printf("Tempo com concorrência: %v\n", response.TimeWithConcurrency)
 }

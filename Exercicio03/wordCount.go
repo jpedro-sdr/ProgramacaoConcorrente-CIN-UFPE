@@ -1,14 +1,12 @@
-package wordcount
+package wordCount
 
 import (
-	"fmt"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
 )
 
-func WordCount(s string) map[string]int {
+func wordCount(s string) map[string]int {
 	words := strings.Fields(s)
 	m := make(map[string]int)
 	for _, word := range words {
@@ -17,7 +15,7 @@ func WordCount(s string) map[string]int {
 	return m
 }
 
-func ConcurrentWordCount(s string, numParts int) map[string]int {
+func concurrentWordCount(s string, numParts int) map[string]int {
 	parts := make([]string, numParts)
 	words := make([]map[string]int, numParts)
 	var wg sync.WaitGroup
@@ -27,7 +25,7 @@ func ConcurrentWordCount(s string, numParts int) map[string]int {
 		parts[i] = s[start:end]
 		wg.Add(1)
 		go func(i int) {
-			words[i] = WordCount(parts[i])
+			words[i] = wordCount(parts[i])
 			wg.Done()
 		}(i)
 	}
@@ -43,19 +41,12 @@ func ConcurrentWordCount(s string, numParts int) map[string]int {
 
 func ExecuteWordCount(text string, numParts int) (time.Duration, time.Duration) {
 	start := time.Now()
-	WordCount(text)
+	wordCount(text)
 	timeWordCountWithoutConcurrency := time.Since(start)
 
 	start = time.Now()
-	ConcurrentWordCount(text, numParts)
+	concurrentWordCount(text, numParts)
 	timeWordCountWithConcurrency := time.Since(start)
 
 	return timeWordCountWithoutConcurrency, timeWordCountWithConcurrency
-}
-
-func PrintCPUUsage() {
-	var stat runtime.MemStats
-	runtime.ReadMemStats(&stat)
-	fmt.Printf("Memória Alocada: %v MB\n", stat.Alloc/1024/1024)
-	fmt.Printf("Uso da CPU: %d%%\n", stat.Sys*100/stat.TotalAlloc)
 }
