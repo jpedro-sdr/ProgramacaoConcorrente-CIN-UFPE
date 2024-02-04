@@ -1,61 +1,62 @@
 package main
 
 import (
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 )
 
-type Matrices struct {
-	Matrix1 [][]int
-	Matrix2 [][]int
+type WordCountResponse struct {
+	TimeWithoutConcurrency time.Duration `json:"timeWithoutConcurrency"`
+	TimeWithConcurrency    time.Duration `json:"timeWithConcurrency"`
 }
 
-func multiplicarMatrizes(m1, m2 [][]int) [][]int {
-	// Implementação da multiplicação de matrizes
-	// ...
-	return nil
-}
-
-func handleClient(conn net.Conn) {
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	var matrices Matrices
-	decoder := gob.NewDecoder(conn)
-	err := decoder.Decode(&matrices)
+	decoder := json.NewDecoder(conn)
+	var requestData struct {
+		Text     string `json:"text"`
+		NumParts int    `json:"numParts"`
+	}
+	err := decoder.Decode(&requestData)
 	if err != nil {
-		fmt.Println("Erro ao decodificar dados:", err)
+		fmt.Println("Erro ao decodificar a solicitação:", err)
 		return
 	}
 
-	// Processar dados (por exemplo, multiplicar matrizes)
-	resultMatrix := multiplicarMatrizes(matrices.Matrix1, matrices.Matrix2)
+	timeWithoutConcurrency, timeWithConcurrency := wordcount.ExecuteWordCount(requestData.Text, requestData.NumParts)
 
-	// Enviar resultado de volta ao cliente
-	encoder := gob.NewEncoder(conn)
-	err = encoder.Encode(resultMatrix)
+	response := WordCountResponse{
+		TimeWithoutConcurrency: timeWithoutConcurrency,
+		TimeWithConcurrency:    timeWithConcurrency,
+	}
+
+	encoder := json.NewEncoder(conn)
+	err = encoder.Encode(response)
 	if err != nil {
-		fmt.Println("Erro ao codificar resultado:", err)
+		fmt.Println("Erro ao enviar a resposta:", err)
 		return
 	}
 }
 
 func main() {
-	listener, err := net.Listen("tcp", "127.0.0.1:5000")
+	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		fmt.Println("Erro ao iniciar o servidor:", err)
+		fmt.Println("Erro ao criar o servidor:", err)
 		return
 	}
 	defer listener.Close()
-
-	fmt.Println("Servidor TCP ouvindo em 127.0.0.1:5000")
+	fmt.Println("Servidor aguardando conexões na porta 8080...")
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Erro ao aceitar conexão:", err)
+			fmt.Println("Erro ao aceitar a conexão:", err)
 			continue
 		}
-		go handleClient(conn)
+
+		go handleConnection(conn)
 	}
 }
