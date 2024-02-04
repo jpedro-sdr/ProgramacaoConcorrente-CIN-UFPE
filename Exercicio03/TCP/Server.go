@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Exercicio03/Functions"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -26,7 +27,7 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
-	timeWithoutConcurrency, timeWithConcurrency := wordcount.ExecuteWordCount(requestData.Text, requestData.NumParts)
+	timeWithoutConcurrency, timeWithConcurrency := Functions.ExecuteWordCount(requestData.Text, requestData.NumParts)
 
 	response := WordCountResponse{
 		TimeWithoutConcurrency: timeWithoutConcurrency,
