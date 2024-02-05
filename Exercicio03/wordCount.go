@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+type WordCountRequest struct {
+	Text     string `json:"text"`
+	NumParts int    `json:"numParts"`
+}
+
+type WordCountResponse struct {
+	TimeWithoutConcurrency time.Duration `json:"timeWithoutConcurrency"`
+	TimeWithConcurrency    time.Duration `json:"timeWithConcurrency"`
+}
+
 func wordCount(s string) map[string]int {
 	words := strings.Fields(s)
 	m := make(map[string]int)
