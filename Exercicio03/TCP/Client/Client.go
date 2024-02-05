@@ -1,91 +1,112 @@
 package main
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
 
-// WordCountRequest é a estrutura para a solicitação de contagem de palavras
-type WordCountRequest struct {
-	Text     string `json:"text"`
-	NumParts int    `json:"numParts"`
-}
+func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration) {
+	defer wg.Done()
 
-// WordCountResponse é a estrutura para a resposta da contagem de palavras
-type WordCountResponse struct {
-	TimeWithoutConcurrency time.Duration `json:"timeWithoutConcurrency"`
-	TimeWithConcurrency    time.Duration `json:"timeWithConcurrency"`
-}
-
-func communicateWithServer(requestData WordCountRequest, conn net.Conn, iteration int) {
-	// Medir o tempo inicial
-	startTime := time.Now()
-
-	// Enviar a mensagem para o servidor
-	encoder := json.NewEncoder(conn)
-	err := encoder.Encode(requestData)
-	if err != nil {
-		fmt.Println("Erro ao codificar e enviar a mensagem:", err)
-		return
-	}
-
-	fmt.Println(requestData)
-
-	// Receber a resposta do servidor
-	var response WordCountResponse
-	decoder := json.NewDecoder(conn)
-	err = decoder.Decode(&response)
-	if err != nil {
-		fmt.Println("Erro ao decodificar a resposta:", decoder)
-		fmt.Println("Erro ao decodificar a resposta:", err)
-		return
-	}
-
-	// Medir o tempo final e calcular o round-trip time
-	endTime := time.Now()
-	roundTripTime := endTime.Sub(startTime)
-
-	// Processar a resposta conforme necessário
-	fmt.Printf("Iteração %d\n", iteration+1)
-	fmt.Printf("Tempo sem concorrência: %v\n", response.TimeWithoutConcurrency)
-	fmt.Printf("Tempo com concorrência: %v\n", response.TimeWithConcurrency)
-	fmt.Printf("Round-trip time: %v\n", roundTripTime)
-	fmt.Println("------------------------------")
-}
-
-func main() {
-	// Conectar ao servidor TCP
-	conn, err := net.Dial("tcp", "localhost:8081")
+	server := "localhost:8081"
+	conn, err := net.DialTimeout("tcp", server, 2*time.Second)
 	if err != nil {
 		fmt.Println("Erro ao conectar ao servidor:", err)
 		return
 	}
 	defer conn.Close()
 
-	var wg sync.WaitGroup
-
-	// Executar o código 10,000 vezes
-	for i := 0; i < 10000; i++ {
-		// Construir a mensagem a ser enviada ao servidor
-		requestData := WordCountRequest{
-			Text:     "Seu texto aqui",
-			NumParts: 3,
-		}
-		wg.Add(1)
-		// Executar a comunicação com o servidor em uma goroutine
-		go func(iteration int) {
-			defer wg.Done()
-			communicateWithServer(requestData, conn, iteration)
-		}(i)
-
-		// Aguardar um curto período entre as iterações
-		time.Sleep(time.Millisecond * 1000)
+	bibleText, err := readBibleText("../biblia.txt")
+	if err != nil {
+		fmt.Println("Erro ao ler o conteúdo do arquivo:", err)
+		return
 	}
+
+	chunkSize := 1024
+	startTime := time.Now()
+
+	for i := 0; i < len(bibleText); i += chunkSize {
+		end := i + chunkSize
+		if end > len(bibleText) {
+			end = len(bibleText)
+		}
+
+		chunk := bibleText[i:end]
+		_, err = conn.Write([]byte(chunk))
+		if err != nil {
+			fmt.Println("Erro ao enviar requisição para o servidor:", err)
+			return
+		}
+	}
+
+	buffer := make([]byte, 1024) // Ajuste do tamanho do buffer para TCP
+	_, err = conn.Read(buffer)
+	if err != nil {
+		fmt.Println("Erro ao ler resposta do servidor:", err)
+		return
+	}
+
+	endTime := time.Now()
+	roundTripTime := endTime.Sub(startTime)
+	*roundTripTimes = append(*roundTripTimes, roundTripTime)
+}
+
+func readBibleText(filename string) (string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	var content string
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		content += scanner.Text() + "\n"
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return content, nil
+}
+
+func main() {
+	var wg sync.WaitGroup
+	numRequests := 10000
+
+	var roundTripTimesTCP []time.Duration
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go makeRequest(&wg, &roundTripTimesTCP)
+		time.Sleep(50 * time.Millisecond)
+	}
+
 	wg.Wait()
 
-	// Aguardar um tempo suficiente para permitir a conclusão das goroutines antes de encerrar o programa
-	time.Sleep(time.Second * 5)
+	saveToFile(roundTripTimesTCP, "../tcp.txt")
+}
+func saveToFile(roundTripTimes []time.Duration, filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		fmt.Println("Erro ao criar arquivo:", err)
+		return
+	}
+	defer file.Close()
+
+	for _, rt := range roundTripTimes {
+		_, err := file.WriteString(fmt.Sprintf("%f\n", rt.Seconds()*1000)) // converter para milissegundos
+		if err != nil {
+			fmt.Println("Erro ao escrever no arquivo:", err)
+			return
+		}
+	}
+
+	fmt.Println("Tempos de round-trip salvos em", filename)
 }

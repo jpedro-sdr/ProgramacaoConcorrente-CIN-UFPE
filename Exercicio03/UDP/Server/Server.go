@@ -1,9 +1,6 @@
-// servidor.go
-
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -11,72 +8,47 @@ import (
 	"time"
 )
 
-type WordCountResponse struct {
-	TimeWithoutConcurrency time.Duration `json:"timeWithoutConcurrency"`
-	TimeWithConcurrency    time.Duration `json:"timeWithConcurrency"`
-}
+func handleConnection(conn *net.UDPConn) {
+	buffer := make([]byte, 65536)
+	// Leitura da requisição do cliente
+	n, addr, err := conn.ReadFromUDP(buffer)
+	if err != nil {
+		fmt.Println("Erro ao ler a requisição do cliente:", err)
+		return
+	}
 
-type WordCountRequest struct {
-	Text     string `json:"text"`
-	NumParts int    `json:"numParts"`
-}
+	// Processamento da requisição
+	requestText := string(buffer[:n])
+	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := executeWordCount(requestText)
 
-func handleClient(conn *net.UDPConn) {
-	buffer := make([]byte, 1024)
-
-	for {
-		n, addr, err := conn.ReadFromUDP(buffer)
-		if err != nil {
-			fmt.Println("Error reading from UDP:", err)
-			return
-		}
-
-		var request WordCountRequest
-		err = json.Unmarshal(buffer[:n], &request)
-		if err != nil {
-			fmt.Println("Error decoding JSON request:", err)
-			return
-		}
-
-		timeWithoutConcurrency, timeWithConcurrency := executeWordCount(request.Text, request.NumParts)
-
-		response := WordCountResponse{
-			TimeWithoutConcurrency: timeWithoutConcurrency,
-			TimeWithConcurrency:    timeWithConcurrency,
-		}
-
-		// Enviar a resposta JSON de volta para o cliente
-		responseBytes, err := json.Marshal(response)
-		if err != nil {
-			fmt.Println("Error encoding JSON response:", err)
-			return
-		}
-
-		_, err = conn.WriteToUDP(responseBytes, addr)
-		if err != nil {
-			fmt.Println("Error writing to UDP:", err)
-			return
-		}
+	// Resposta ao cliente
+	response := fmt.Sprintf("Tempo com concorrência: %d \nTempo sem concorrência %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
+	_, err = conn.WriteToUDP([]byte(response), addr)
+	if err != nil {
+		fmt.Println("Erro ao enviar resposta para o cliente:", err)
+		return
 	}
 }
 
 func main() {
-	udpAddr, err := net.ResolveUDPAddr("udp", ":8080")
+	address, err := net.ResolveUDPAddr("udp", "localhost:8080")
 	if err != nil {
-		fmt.Println("Error resolving UDP address:", err)
+		fmt.Println("Erro ao resolver o endereço UDP:", err)
 		return
 	}
 
-	conn, err := net.ListenUDP("udp", udpAddr)
+	conn, err := net.ListenUDP("udp", address)
 	if err != nil {
-		fmt.Println("Error listening on UDP:", err)
+		fmt.Println("Erro ao iniciar o servidor UDP:", err)
 		return
 	}
 	defer conn.Close()
 
-	fmt.Println("Servidor UDP aguardando conexões na porta 8080...")
+	fmt.Println("Servidor UDP ouvindo em", address)
 
-	handleClient(conn)
+	for {
+		handleConnection(conn)
+	}
 }
 
 func wordCount(s string) map[string]int {
@@ -112,7 +84,8 @@ func concurrentWordCount(s string, numParts int) map[string]int {
 	return m
 }
 
-func executeWordCount(text string, numParts int) (time.Duration, time.Duration) {
+func executeWordCount(text string) (time.Duration, time.Duration) {
+	numParts := 6
 	start := time.Now()
 	wordCount(text)
 	timeWordCountWithoutConcurrency := time.Since(start)

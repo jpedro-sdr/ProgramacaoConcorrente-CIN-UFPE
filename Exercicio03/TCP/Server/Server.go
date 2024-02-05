@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -12,63 +11,46 @@ import (
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	decoder := json.NewDecoder(conn)
-	var requestData WordCountRequest
-
-	err := decoder.Decode(&requestData)
+	buffer := make([]byte, 1024)
+	// Leitura da requisição do cliente
+	n, err := conn.Read(buffer)
 	if err != nil {
-		fmt.Println("Erro ao decodificar a solicitação:", err)
+		fmt.Println("Erro ao ler a requisição do cliente:", err)
 		return
 	}
 
-	timeWithoutConcurrency, timeWithConcurrency := executeWordCount(requestData.Text, requestData.NumParts)
-	fmt.Println(requestData.Text)
+	requestText := string(buffer[:n])
+	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := executeWordCount(requestText)
 
-	response := WordCountResponse{
-		TimeWithoutConcurrency: timeWithoutConcurrency,
-		TimeWithConcurrency:    timeWithConcurrency,
-	}
-
-	fmt.Println("Antes de enviar a resposta ao cliente", conn)
-
-	encoder := json.NewEncoder(conn)
-	err = encoder.Encode(response)
+	response := fmt.Sprintf("Tempo com concorrência: %d \nTempo sem concorrência %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
+	_, err = conn.Write([]byte(response))
 	if err != nil {
-		fmt.Println("Erro ao enviar a resposta:", err)
+		fmt.Println("Erro ao enviar resposta para o cliente:", err)
 		return
 	}
-	fmt.Println("Depois de enviar a resposta ao cliente", encoder)
-
 }
 
 func main() {
-	listener, err := net.Listen("tcp", ":8081")
+	address := "localhost:8081"
+
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		fmt.Println("Erro ao criar o servidor:", err)
+		fmt.Println("Erro ao iniciar o servidor:", err)
 		return
 	}
 	defer listener.Close()
-	fmt.Println("Servidor aguardando conexões na porta 8081...")
+
+	fmt.Println("Servidor TCP ouvindo em", address)
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Erro ao aceitar a conexão:", err)
+			fmt.Println("Erro ao aceitar conexão do cliente:", err)
 			continue
 		}
 
 		go handleConnection(conn)
 	}
-}
-
-type WordCountResponse struct {
-	TimeWithoutConcurrency time.Duration `json:"timeWithoutConcurrency"`
-	TimeWithConcurrency    time.Duration `json:"timeWithConcurrency"`
-}
-
-type WordCountRequest struct {
-	Text     string `json:"text"`
-	NumParts int    `json:"numParts"`
 }
 
 func wordCount(s string) map[string]int {
@@ -104,7 +86,8 @@ func concurrentWordCount(s string, numParts int) map[string]int {
 	return m
 }
 
-func executeWordCount(text string, numParts int) (time.Duration, time.Duration) {
+func executeWordCount(text string) (time.Duration, time.Duration) {
+	numParts := 6
 	start := time.Now()
 	wordCount(text)
 	timeWordCountWithoutConcurrency := time.Since(start)
