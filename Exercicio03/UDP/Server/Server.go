@@ -22,7 +22,7 @@ func handleConnection(conn *net.UDPConn) {
 	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := executeWordCount(requestText)
 
 	// Resposta ao cliente
-	response := fmt.Sprintf("Tempo com concorrência: %d \nTempo sem concorrência %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
+	response := fmt.Sprintf("Com concorrência: %d  || Sem concorrência: %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
 	_, err = conn.WriteToUDP([]byte(response), addr)
 	if err != nil {
 		fmt.Println("Erro ao enviar resposta para o cliente:", err)

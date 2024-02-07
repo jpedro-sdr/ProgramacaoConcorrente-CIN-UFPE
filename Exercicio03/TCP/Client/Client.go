@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration) {
+func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime *time.Duration) {
 	defer wg.Done()
 
 	server := "localhost:8081"
@@ -20,7 +20,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration) {
 	}
 	defer conn.Close()
 
-	bibleText, err := readBibleText("../biblia.txt")
+	bibleText, err := readBibleText("../../biblia.txt")
 	if err != nil {
 		fmt.Println("Erro ao ler o conteúdo do arquivo:", err)
 		return
@@ -43,16 +43,19 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration) {
 		}
 	}
 
-	buffer := make([]byte, 1024) // Ajuste do tamanho do buffer para TCP
-	_, err = conn.Read(buffer)
+	buffer := make([]byte, 1024)
+	n, err := conn.Read(buffer)
 	if err != nil {
 		fmt.Println("Erro ao ler resposta do servidor:", err)
 		return
 	}
 
+	fmt.Printf("%s\n", buffer[:n])
+
 	endTime := time.Now()
 	roundTripTime := endTime.Sub(startTime)
 	*roundTripTimes = append(*roundTripTimes, roundTripTime)
+	*totalTime += roundTripTime
 }
 
 func readBibleText(filename string) (string, error) {
@@ -78,19 +81,22 @@ func readBibleText(filename string) (string, error) {
 
 func main() {
 	var wg sync.WaitGroup
-	numRequests := 10000
+	numRequests := 10
 
 	var roundTripTimesTCP []time.Duration
+	var totalTime time.Duration
 
 	for i := 0; i < numRequests; i++ {
 		wg.Add(1)
-		go makeRequest(&wg, &roundTripTimesTCP)
+		go makeRequest(&wg, &roundTripTimesTCP, &totalTime)
 		time.Sleep(50 * time.Millisecond)
 	}
 
 	wg.Wait()
 
 	saveToFile(roundTripTimesTCP, "../tcp.txt")
+	fmt.Println("RTT", totalTime)
+
 }
 func saveToFile(roundTripTimes []time.Duration, filename string) {
 	file, err := os.Create(filename)
@@ -107,6 +113,4 @@ func saveToFile(roundTripTimes []time.Duration, filename string) {
 			return
 		}
 	}
-
-	fmt.Println("Tempos de round-trip salvos em", filename)
 }

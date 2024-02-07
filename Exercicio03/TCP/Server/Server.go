@@ -22,7 +22,7 @@ func handleConnection(conn net.Conn) {
 	requestText := string(buffer[:n])
 	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := executeWordCount(requestText)
 
-	response := fmt.Sprintf("Tempo com concorrência: %d \nTempo sem concorrência %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
+	response := fmt.Sprintf("Com concorrência: %d  || Sem concorrência: %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
 	_, err = conn.Write([]byte(response))
 	if err != nil {
 		fmt.Println("Erro ao enviar resposta para o cliente:", err)
@@ -45,7 +45,7 @@ func main() {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Erro ao aceitar conexão do cliente:", err)
+			// fmt.Println("Erro ao aceitar conexão do cliente:", err)
 			continue
 		}
 
