@@ -22,7 +22,12 @@ func handleConnection(conn net.Conn) {
 	requestText := string(buffer[:n])
 	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := executeWordCount(requestText)
 
-	response := fmt.Sprintf("Tempo com concorrência: %d \nTempo sem concorrência %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
+	timeWordCountWithConcurrencySeconds := float64(timeWordCountWithConcurrency) / float64(time.Millisecond)
+	timeWordCountWithoutConcurrencySeconds := float64(timeWordCountWithoutConcurrency) / float64(time.Millisecond)
+
+	response := fmt.Sprintf("Com concorrência: %.2f ms Sem concorrência %.2f ms", timeWordCountWithConcurrencySeconds, timeWordCountWithoutConcurrencySeconds)
+
+	// response := fmt.Sprintf("Com concorrência: %dms Sem concorrência %dms", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
 	_, err = conn.Write([]byte(response))
 	if err != nil {
 		fmt.Println("Erro ao enviar resposta para o cliente:", err)
@@ -31,7 +36,7 @@ func handleConnection(conn net.Conn) {
 }
 
 func main() {
-	address := "localhost:8081"
+	address := "127.0.0.1:8081"
 
 	listener, err := net.Listen("tcp", address)
 	if err != nil {

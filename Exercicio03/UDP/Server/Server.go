@@ -21,8 +21,11 @@ func handleConnection(conn *net.UDPConn) {
 	requestText := string(buffer[:n])
 	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := executeWordCount(requestText)
 
-	// Resposta ao cliente
-	response := fmt.Sprintf("Tempo com concorrência: %d \nTempo sem concorrência %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
+	timeWordCountWithConcurrencySeconds := float64(timeWordCountWithConcurrency) / float64(time.Millisecond)
+	timeWordCountWithoutConcurrencySeconds := float64(timeWordCountWithoutConcurrency) / float64(time.Millisecond)
+
+	response := fmt.Sprintf("Com concorrência: %.2f ms Sem concorrência %.2f ms", timeWordCountWithConcurrencySeconds, timeWordCountWithoutConcurrencySeconds)
+
 	_, err = conn.WriteToUDP([]byte(response), addr)
 	if err != nil {
 		fmt.Println("Erro ao enviar resposta para o cliente:", err)
