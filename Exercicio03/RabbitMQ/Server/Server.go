@@ -91,7 +91,7 @@ func concurrentWordCount(s string, numParts int) map[string]int {
 }
 
 func executeWordCount(text string) (time.Duration, time.Duration) {
-	numParts := 3
+	numParts := 2
 	start := time.Now()
 	wordCount(text)
 	timeWordCountWithoutConcurrency := time.Since(start)

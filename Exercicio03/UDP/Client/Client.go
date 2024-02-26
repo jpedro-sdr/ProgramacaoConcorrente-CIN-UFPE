@@ -82,7 +82,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 	*roundTripTimes = append(*roundTripTimes, roundTripTime)
 	*totalTime += roundTripTime
 
-	fmt.Printf("Resposta do servidor: %s\n", buffer[:n])
+	fmt.Printf("%s\n", buffer[:n])
 }
 
 func main() {

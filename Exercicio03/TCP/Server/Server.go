@@ -15,7 +15,7 @@ func handleConnection(conn net.Conn) {
 	// Leitura da requisição do cliente
 	n, err := conn.Read(buffer)
 	if err != nil {
-		fmt.Println("Erro ao ler a requisição do cliente:", err)
+		// fmt.Println("Erro ao ler a requisição do cliente:", err)
 		return
 	}
 

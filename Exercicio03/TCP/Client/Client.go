@@ -20,7 +20,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 	}
 	defer conn.Close()
 
-	bibleText, err := readBibleText("../../biblia.txt")
+	bibleText, err := readBibleText("../biblia.txt")
 	if err != nil {
 		fmt.Println("Erro ao ler o conteúdo do arquivo:", err)
 		return
@@ -81,7 +81,7 @@ func readBibleText(filename string) (string, error) {
 
 func main() {
 	var wg sync.WaitGroup
-	numRequests := 10
+	numRequests := 1000
 
 	var roundTripTimesTCP []time.Duration
 	var totalTime time.Duration
@@ -89,7 +89,7 @@ func main() {
 	for i := 0; i < numRequests; i++ {
 		wg.Add(1)
 		go makeRequest(&wg, &roundTripTimesTCP, &totalTime)
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 
 	wg.Wait()
