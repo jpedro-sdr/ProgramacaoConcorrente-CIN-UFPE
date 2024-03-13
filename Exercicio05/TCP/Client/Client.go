@@ -66,7 +66,7 @@ func main() {
 	for i := 0; i < common.NumRequests; i++ {
 		wg.Add(1)
 		go makeRequest(&wg, &roundTripTimesTCP, &totalTime)
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(common.TimeSleep * time.Millisecond)
 	}
 
 	wg.Wait()

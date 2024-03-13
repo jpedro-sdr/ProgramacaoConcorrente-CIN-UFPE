@@ -30,7 +30,7 @@ func SaveToFile(roundTripTimes []time.Duration, filename string) {
 }
 
 func ReadBibleText() (string, error) {
-	file, err := os.Open("../../biblia.txt")
+	file, err := os.Open("C:/Projetos Faculdade/ProgramacaoConcorrente/Exercicio05/biblia.txt")
 	if err != nil {
 		return "", err
 	}

@@ -48,9 +48,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 	}
 
 	startTime := time.Now()
-
 	for _, chunk := range bibleText {
-		// Convertendo o chunk de rune para []byte
 		chunkBytes := []byte(string(chunk))
 
 		err = ch.Publish(
@@ -68,8 +66,6 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 		}
 	}
 
-	// Consuma a resposta do servidor (opcional, depende de como o servidor é configurado)
-
 	endTime := time.Now()
 	roundTripTime := endTime.Sub(startTime)
 	*roundTripTimes = append(*roundTripTimes, roundTripTime)
@@ -85,7 +81,7 @@ func main() {
 	for i := 0; i < common.NumRequests; i++ {
 		wg.Add(1)
 		go makeRequest(&wg, &roundTripTimesRabbitMQ, &totalTime)
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(common.TimeSleep * time.Millisecond)
 	}
 
 	wg.Wait()
