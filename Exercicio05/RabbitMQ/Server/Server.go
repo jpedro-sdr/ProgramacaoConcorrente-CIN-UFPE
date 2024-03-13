@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"log"
 	common "module05/Common"
-	"sync"
 
 	"github.com/streadway/amqp"
 )
 
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(1)
 
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
@@ -57,6 +54,4 @@ func main() {
 		fmt.Printf("Tempo sem concorrência: %d\n", timeWordCountWithoutConcurrency)
 		fmt.Printf("Tempo com concorrência: %d\n", timeWordCountWithConcurrency)
 	}
-
-	wg.Wait()
 }
