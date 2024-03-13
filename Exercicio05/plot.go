@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bufio"
+	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
 	"sort"
-	"strconv"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
@@ -18,37 +18,36 @@ func main() {
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title: "RTT Desvio padrão (ms)",
+			Title: "RTT Mediana (ms)",
 		}),
 	)
 
-	// Read the values from the files and calculate the standard deviation, replacing zeros with the mean
-	tcpValues, err := readValues("tcp.txt", true)
+	tcpValues, err := readValues("5ms/tcp.txt", true)
 	if err != nil {
 		log.Fatalf("Error reading tcp.txt: %v", err)
 	}
-	tcpStdDev := stdDev(tcpValues)
+	tcpStdDev := average(tcpValues)
 
-	udpValues, err := readValues("udp.txt", true)
+	udpValues, err := readValues("5ms/udp.txt", true)
 	if err != nil {
 		log.Fatalf("Error reading udp.txt: %v", err)
 	}
-	udpStdDev := stdDev(udpValues)
+	udpStdDev := average(udpValues)
 
-	rpcValues, err := readValues("rpc.txt", true)
+	rpcValues, err := readValues("5ms/rpc.txt", true)
 	if err != nil {
 		log.Fatalf("Error reading rpc.txt: %v", err)
 	}
-	rpcStdDev := stdDev(rpcValues)
+	rpcStdDev := average(rpcValues)
 
-	rabbitMQValues, err := readValues("rpc.txt", true)
+	rabbitMQValues, err := readValues("5ms/rabbitmq.txt", true)
 	if err != nil {
 		log.Fatalf("Error reading rpc.txt: %v", err)
 	}
-	rabbitMQStdDev := stdDev(rabbitMQValues)
+	rabbitMQStdDev := average(rabbitMQValues)
 
 	// Add the standard deviations to the chart
-	bar.SetXAxis([]string{"TCP", "UDP", "RPC"}).
+	bar.SetXAxis([]string{"TCP", "UDP", "RPC", "RabbitMQ"}).
 		AddSeries("TCP", generateBarItems([]float64{tcpStdDev})).
 		AddSeries("UDP", generateBarItems([]float64{udpStdDev})).
 		AddSeries("RPC", generateBarItems([]float64{rpcStdDev})).
@@ -70,7 +69,7 @@ func main() {
 	}
 }
 
-func readValues(filename string, replaceZeros bool) ([]float64, error) {
+func readValues(filename string, removeZeros bool) ([]float64, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -78,36 +77,22 @@ func readValues(filename string, replaceZeros bool) ([]float64, error) {
 	defer file.Close()
 
 	var values []float64
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		value, err := strconv.ParseFloat(scanner.Text(), 64)
+	var value float64
+
+	for {
+		_, err := fmt.Fscanf(file, "%f\n", &value)
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return nil, err
 		}
-		if replaceZeros && value == 0 {
-			// Substituir zero pela média de todos os valores
-			value = calculateMean(values)
+		if !removeZeros || value != 0 {
+			values = append(values, value)
 		}
-		values = append(values, value)
-	}
-
-	if scanner.Err() != nil {
-		return nil, scanner.Err()
 	}
 
 	return values, nil
-}
-
-func calculateMean(values []float64) float64 {
-	if len(values) == 0 {
-		return 0
-	}
-
-	sum := 0.0
-	for _, value := range values {
-		sum += value
-	}
-	return sum / float64(len(values))
 }
 
 func median(values []float64) float64 {

@@ -47,10 +47,9 @@ func main() {
 		log.Fatalf("Erro ao registrar o consumidor: %v", err)
 	}
 
-	fmt.Println("Aguardando mensagens para contar palavras...")
-
 	for msg := range msgsFromClient {
-		timeWordCountWithoutConcurrency, timeWordCountWithConcurrency := common.ExecuteWordCount(string(msg.Body))
+		timeWordCountWithoutConcurrency, timeWordCountWithConcurrency :=
+			common.ExecuteWordCount(string(msg.Body))
 		fmt.Printf("Tempo sem concorrência: %d\n", timeWordCountWithoutConcurrency)
 		fmt.Printf("Tempo com concorrência: %d\n", timeWordCountWithConcurrency)
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 var NumRequests = 10000
-var TimeSleep time.Duration = 5
+var TimeSleep time.Duration = 50
 
 func SaveToFile(roundTripTimes []time.Duration, filename string) {
 	file, err := os.Create(filename)

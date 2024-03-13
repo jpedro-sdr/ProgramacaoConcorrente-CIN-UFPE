@@ -11,6 +11,8 @@ import (
 )
 
 func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime *time.Duration) {
+	defer wg.Done()
+
 	// Conectar-se ao servidor RabbitMQ
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
@@ -18,14 +20,12 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 	}
 	defer conn.Close()
 
-	// Abrir um canal
 	ch, err := conn.Channel()
 	if err != nil {
 		log.Fatalf("Erro ao abrir o canal: %v", err)
 	}
 	defer ch.Close()
 
-	// Declarar uma fila
 	q, err := ch.QueueDeclare(
 		"wordcount_queue", // Nome da fila
 		false,             // Durable
@@ -61,8 +61,10 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 
 	// Calcular o round trip time
 	end := time.Now()
-	rtt := end.Sub(start)
-	fmt.Printf("Round Trip Time: %v\n", rtt)
+	roundTripTime := end.Sub(start)
+
+	*roundTripTimes = append(*roundTripTimes, roundTripTime)
+	*totalTime += roundTripTime
 }
 
 func main() {
@@ -79,6 +81,7 @@ func main() {
 
 	wg.Wait()
 
-	common.SaveToFile(roundTripTimesRabbitMQ, "../../rabbitmq.txt")
 	fmt.Println("RTT", totalTime)
+	common.SaveToFile(roundTripTimesRabbitMQ, "../rabbitmq.txt")
+
 }
