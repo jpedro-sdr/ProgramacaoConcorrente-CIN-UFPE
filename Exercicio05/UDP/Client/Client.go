@@ -1,35 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	common "module05/Common"
 	"net"
-	"os"
 	"strconv"
 	"sync"
 	"time"
 )
-
-func readBibleText(filename string) (string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	var content string
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		content += scanner.Text() + "\n"
-	}
-
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	return content, nil
-}
 
 func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime *time.Duration) {
 	defer wg.Done()
@@ -50,7 +28,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 	defer conn.Close()
 
 	// Envio da requisição
-	bibleText, err := readBibleText("../biblia.txt")
+	bibleText, err := common.ReadBibleText()
 	if err != nil {
 		fmt.Println("Erro ao ler o conteúdo do arquivo:", err)
 		return
@@ -87,12 +65,11 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 
 func main() {
 	var wg sync.WaitGroup
-	numRequests := 10000
 
 	var roundTripTimesTCP []time.Duration
 	var totalTime time.Duration
 
-	for i := 0; i < numRequests; i++ {
+	for i := 0; i < common.NumRequests; i++ {
 		wg.Add(1)
 		go makeRequest(&wg, &roundTripTimesTCP, &totalTime)
 		time.Sleep(50 * time.Millisecond)
@@ -100,23 +77,5 @@ func main() {
 
 	wg.Wait()
 
-	saveToFile(roundTripTimesTCP, "../udp.txt")
-	fmt.Println("RTT", totalTime)
-}
-
-func saveToFile(roundTripTimes []time.Duration, filename string) {
-	file, err := os.Create(filename)
-	if err != nil {
-		fmt.Println("Erro ao criar arquivo:", err)
-		return
-	}
-	defer file.Close()
-
-	for _, rt := range roundTripTimes {
-		_, err := file.WriteString(fmt.Sprintf("%f\n", rt.Seconds()*1000)) // converter para milissegundos
-		if err != nil {
-			fmt.Println("Erro ao escrever no arquivo:", err)
-			return
-		}
-	}
+	common.SaveToFile(roundTripTimesTCP, "../udp.txt")
 }

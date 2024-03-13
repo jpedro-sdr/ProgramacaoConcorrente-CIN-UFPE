@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	common "module05/Common"
 	"net"
 	"net/rpc"
 )
@@ -9,7 +10,7 @@ import (
 type WordCountService struct{}
 
 func (w *WordCountService) WordCount(request string, response *string) error {
-	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := ExecuteWordCount(request)
+	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := common.ExecuteWordCount(request)
 	*response = fmt.Sprintf("Com concorrência: %d  || Sem concorrência: %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
 	return nil
 }

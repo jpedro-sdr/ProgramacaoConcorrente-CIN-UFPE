@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	common "module05/Common"
 	"net/rpc"
 	"sync"
 	"time"
@@ -17,7 +18,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 	}
 	defer client.Close()
 
-	bibleText, err := ReadBibleText("../../biblia.txt")
+	bibleText, err := common.ReadBibleText()
 	if err != nil {
 		fmt.Println("Erro ao ler o conteúdo do arquivo:", err)
 		return
@@ -39,12 +40,11 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 
 func main() {
 	var wg sync.WaitGroup
-	numRequests := 10000
 
 	var roundTripTimes []time.Duration
 	var totalTime time.Duration
 
-	for i := 0; i < numRequests; i++ {
+	for i := 0; i < common.NumRequests; i++ {
 		wg.Add(1)
 		go makeRequest(&wg, &roundTripTimes, &totalTime)
 		time.Sleep(50 * time.Millisecond)
@@ -52,6 +52,6 @@ func main() {
 
 	wg.Wait()
 
-	SaveToFile(roundTripTimes, "../rpc.txt")
+	common.SaveToFile(roundTripTimes, "../rpc.txt")
 	fmt.Println("RTT", totalTime)
 }

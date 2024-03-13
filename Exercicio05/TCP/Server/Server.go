@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
+	common "module05/Common"
 	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 func handleConnection(conn net.Conn) {
@@ -20,7 +18,7 @@ func handleConnection(conn net.Conn) {
 	}
 
 	requestText := string(buffer[:n])
-	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := executeWordCount(requestText)
+	timeWordCountWithConcurrency, timeWordCountWithoutConcurrency := common.ExecuteWordCount(requestText)
 
 	response := fmt.Sprintf("Com concorrência: %d  || Sem concorrência: %d", timeWordCountWithConcurrency, timeWordCountWithoutConcurrency)
 	_, err = conn.Write([]byte(response))
@@ -45,56 +43,9 @@ func main() {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			// fmt.Println("Erro ao aceitar conexão do cliente:", err)
 			continue
 		}
 
 		go handleConnection(conn)
 	}
-}
-
-func wordCount(s string) map[string]int {
-	words := strings.Fields(s)
-	m := make(map[string]int)
-	for _, word := range words {
-		m[word]++
-	}
-	return m
-}
-
-func concurrentWordCount(s string, numParts int) map[string]int {
-	parts := make([]string, numParts)
-	words := make([]map[string]int, numParts)
-	var wg sync.WaitGroup
-	for i := 0; i < numParts; i++ {
-		start := i * len(s) / numParts
-		end := (i + 1) * len(s) / numParts
-		parts[i] = s[start:end]
-		wg.Add(1)
-		go func(i int) {
-			words[i] = wordCount(parts[i])
-			wg.Done()
-		}(i)
-	}
-	wg.Wait()
-	m := make(map[string]int)
-	for _, wordMap := range words {
-		for word, count := range wordMap {
-			m[word] += count
-		}
-	}
-	return m
-}
-
-func executeWordCount(text string) (time.Duration, time.Duration) {
-	numParts := 2
-	start := time.Now()
-	wordCount(text)
-	timeWordCountWithoutConcurrency := time.Since(start)
-
-	start = time.Now()
-	concurrentWordCount(text, numParts)
-	timeWordCountWithConcurrency := time.Since(start)
-
-	return timeWordCountWithoutConcurrency, timeWordCountWithConcurrency
 }

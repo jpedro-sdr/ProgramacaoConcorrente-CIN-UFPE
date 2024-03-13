@@ -1,4 +1,4 @@
-package utils
+package common
 
 import (
 	"bufio"
@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 )
+
+var NumRequests = 10
 
 func SaveToFile(roundTripTimes []time.Duration, filename string) {
 	file, err := os.Create(filename)
@@ -26,13 +28,12 @@ func SaveToFile(roundTripTimes []time.Duration, filename string) {
 	}
 }
 
-func ReadBibleText(filename string) (string, error) {
-	file, err := os.Open(filename)
+func ReadBibleText() (string, error) {
+	file, err := os.Open("../../biblia.txt")
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
-
 	var content string
 	scanner := bufio.NewScanner(file)
 
