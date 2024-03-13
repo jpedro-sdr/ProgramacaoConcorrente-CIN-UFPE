@@ -20,7 +20,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 	}
 	defer conn.Close()
 
-	bibleText, err := readBibleText("../biblia.txt")
+	bibleText, err := readBibleText("../../biblia.txt")
 	if err != nil {
 		fmt.Println("Erro ao ler o conteúdo do arquivo:", err)
 		return

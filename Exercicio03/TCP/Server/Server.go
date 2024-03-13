@@ -31,7 +31,7 @@ func handleConnection(conn net.Conn) {
 }
 
 func main() {
-	address := "localhost:8081"
+	address := "127.0.0.1:8081"
 
 	listener, err := net.Listen("tcp", address)
 	if err != nil {

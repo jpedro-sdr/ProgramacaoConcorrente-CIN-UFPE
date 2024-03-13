@@ -77,6 +77,7 @@ func makeRequest(wg *sync.WaitGroup, roundTripTimes *[]time.Duration, totalTime 
 		return
 	}
 
+	fmt.Printf("%s\n", string(buffer[:n]))
 	endTime := time.Now()
 	roundTripTime := endTime.Sub(startTime)
 	*roundTripTimes = append(*roundTripTimes, roundTripTime)
