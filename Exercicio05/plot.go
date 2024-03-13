@@ -41,11 +41,18 @@ func main() {
 	}
 	rpcStdDev := stdDev(rpcValues)
 
+	rabbitMQValues, err := readValues("rpc.txt", true)
+	if err != nil {
+		log.Fatalf("Error reading rpc.txt: %v", err)
+	}
+	rabbitMQStdDev := stdDev(rabbitMQValues)
+
 	// Add the standard deviations to the chart
 	bar.SetXAxis([]string{"TCP", "UDP", "RPC"}).
 		AddSeries("TCP", generateBarItems([]float64{tcpStdDev})).
 		AddSeries("UDP", generateBarItems([]float64{udpStdDev})).
-		AddSeries("RPC", generateBarItems([]float64{rpcStdDev}))
+		AddSeries("RPC", generateBarItems([]float64{rpcStdDev})).
+		AddSeries("RabbitMQ", generateBarItems([]float64{rabbitMQStdDev}))
 
 	// Save the chart in an HTML file
 	page := components.NewPage()
@@ -129,17 +136,6 @@ func generateBarItems(values []float64) []opts.BarData {
 		items = append(items, opts.BarData{Value: value})
 	}
 	return items
-}
-
-// Function to remove zeros from a slice of float64
-func removeZeros(values []float64) []float64 {
-	var nonZeroValues []float64
-	for _, value := range values {
-		if value != 0 {
-			nonZeroValues = append(nonZeroValues, value)
-		}
-	}
-	return nonZeroValues
 }
 
 // Function to calculate the standard deviation of a slice of float64
